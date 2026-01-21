@@ -40,10 +40,11 @@ const BorrowCollapseTableRow = ({
         const loadSettings = async () => {
             try {
                 const response = await api.get('/system/settings');
-                const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-                const rateSetting = settings.find(s => s.setting_key === 'fine_rate_percent');
-                if (rateSetting) {
-                    setFineRatePercent(parseInt(rateSetting.setting_value) || 5);
+                // Backend trả về { success: true, data: { fine_rate_percent: 10, ... } }
+                const settingsData = response?.data?.data || response?.data || {};
+                const fineRate = settingsData.fine_rate_percent;
+                if (fineRate !== undefined && fineRate !== null) {
+                    setFineRatePercent(parseInt(fineRate) || 5);
                 }
             } catch (error) {
                 console.error('Load settings error:', error);
@@ -82,15 +83,25 @@ const BorrowCollapseTableRow = ({
     }, [borrowRequest?.id, initialItems]);
 
     // Calculate overdue days
-    const daysOverdue = useMemo(() => {
-        if (!borrowRequest?.due_date) return 0;
-        const dueDate = new Date(borrowRequest.due_date);
+    // const daysOverdue = useMemo(() => {
+    //     if (!borrowRequest?.due_date) return 0;
+    //     const dueDate = new Date(borrowRequest.due_date);
+    //     const today = new Date();
+    //     const diffTime = today - dueDate;
+    //     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    //     return diffDays > 0 ? diffDays : 0;
+    // }, [borrowRequest?.due_date]);
+    const calculateDaysOverdue = (dueDate) => {
+        if (!dueDate) return 0;
+        const due = new Date(dueDate);
         const today = new Date();
-        const diffTime = today - dueDate;
+        today.setHours(0, 0, 0, 0);
+        due.setHours(0, 0, 0, 0);
+        const diffTime = today - due;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays > 0 ? diffDays : 0;
-    }, [borrowRequest?.due_date]);
-
+    };
+    const daysOverdue = calculateDaysOverdue(borrowRequest?.due_date);
     // Calculate fine preview for each book
     const calculateFine = (item) => {
         let fine = 0;
@@ -164,7 +175,12 @@ const BorrowCollapseTableRow = ({
     ];
 
     const selectedCount = returnItems.filter(i => i.selected).length;
-    const formatCurrency = (amount) => (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
+    const formatCurrency = (amount) => {
+        const numAmount = parseFloat(amount || 0);
+        // Loại bỏ phần thập phân nếu là số nguyên
+        const integerAmount = numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount;
+        return integerAmount.toLocaleString('vi-VN') + ' VNĐ';
+    };
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('vi-VN');

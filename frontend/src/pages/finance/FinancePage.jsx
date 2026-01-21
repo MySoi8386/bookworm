@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getFines, payFine, getDeposits } from '../../services/financeService';
+import { api } from '../../services';
 import toast from 'react-hot-toast';
 import {
     HiOutlineSearch,
@@ -18,6 +19,7 @@ import {
     HiOutlineChevronLeft,
     HiOutlineChevronRight,
     HiOutlineExclamation,
+    HiOutlineExclamationCircle,
     HiOutlineFilter,
     HiOutlineCheck,
     HiOutlineCreditCard,
@@ -42,6 +44,7 @@ const FinancePage = () => {
         page: 1, limit: 10, total: 0, totalPages: 0
     });
     const [finesStatusFilter, setFinesStatusFilter] = useState('');
+    const [fineRatePercent, setFineRatePercent] = useState(5);
 
     // ===== DEPOSITS STATE =====
     const [deposits, setDeposits] = useState([]);
@@ -125,6 +128,24 @@ const FinancePage = () => {
         }
     }, [depositsPagination.page, depositsPagination.limit, depositsTypeFilter]);
 
+    // Load fine rate settings
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const response = await api.get('/system/settings');
+                // Backend trả về { success: true, data: { fine_rate_percent: 10, ... } }
+                const settingsData = response?.data?.data || response?.data || {};
+                const fineRate = settingsData.fine_rate_percent;
+                if (fineRate !== undefined && fineRate !== null) {
+                    setFineRatePercent(parseInt(fineRate) || 5);
+                }
+            } catch (error) {
+                console.error('Load settings error:', error);
+            }
+        };
+        loadSettings();
+    }, []);
+
     useEffect(() => {
         if (activeTab === 'fines') {
             fetchFines();
@@ -193,6 +214,20 @@ const FinancePage = () => {
     };
 
     /**
+     * Calculate overdue days from due date
+     */
+    const calculateDaysOverdue = (dueDate) => {
+        if (!dueDate) return 0;
+        const due = new Date(dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        due.setHours(0, 0, 0, 0);
+        const diffTime = today - due;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    };
+
+    /**
      * Format date
      */
     const formatDate = (dateStr) => {
@@ -204,7 +239,10 @@ const FinancePage = () => {
      * Format currency
      */
     const formatCurrency = (amount) => {
-        return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
+        const numAmount = parseFloat(amount || 0);
+        // Loại bỏ phần thập phân nếu là số nguyên
+        const integerAmount = numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount;
+        return integerAmount.toLocaleString('vi-VN') + ' VNĐ';
     };
 
     return (
@@ -355,7 +393,7 @@ const FinancePage = () => {
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Độc giả</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sách</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lý do</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thông tin phạt</th>
                                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Số tiền</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
@@ -382,8 +420,32 @@ const FinancePage = () => {
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 {fine.bookCopy?.bookEdition?.book?.title || '-'}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {fine.reason || '-'}
+                                            <td className="px-6 py-4">
+                                                {(() => {
+                                                    const dueDate = fine.borrowRequest?.due_date;
+                                                    const daysOverdue = calculateDaysOverdue(dueDate);
+                                                    
+                                                    if (daysOverdue > 0) {
+                                                        return (
+                                                            <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                                                <HiOutlineExclamationCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-red-800">Quá hạn {daysOverdue} ngày</p>
+                                                                    <p className="text-xs text-red-600">Phí phạt: {fineRatePercent}%/ngày theo giá sách</p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    
+                                                    // Nếu không quá hạn, hiển thị reason nếu có
+                                                    if (fine.reason) {
+                                                        return (
+                                                            <span className="text-sm text-gray-600">{fine.reason}</span>
+                                                        );
+                                                    }
+                                                    
+                                                    return <span className="text-sm text-gray-600">-</span>;
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <span className="font-semibold text-gray-900">

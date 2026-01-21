@@ -18,10 +18,11 @@ const ReturnBookCollapse = ({ borrowRequest, onReturn, loading = false }) => {
         const loadSettings = async () => {
             try {
                 const response = await api.get('/system/settings');
-                const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-                const rateSetting = settings.find(s => s.setting_key === 'fine_rate_percent');
-                if (rateSetting) {
-                    setFineRatePercent(parseInt(rateSetting.setting_value) || 5);
+                // Backend trả về { success: true, data: { fine_rate_percent: 10, ... } }
+                const settingsData = response?.data?.data || response?.data || {};
+                const fineRate = settingsData.fine_rate_percent;
+                if (fineRate !== undefined && fineRate !== null) {
+                    setFineRatePercent(parseInt(fineRate) || 5);
                 }
             } catch (error) {
                 console.error('Load settings error:', error);
@@ -140,7 +141,12 @@ const ReturnBookCollapse = ({ borrowRequest, onReturn, loading = false }) => {
     ];
 
     const selectedCount = returnItems.filter(i => i.selected).length;
-    const formatCurrency = (amount) => (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
+    const formatCurrency = (amount) => {
+        const numAmount = parseFloat(amount || 0);
+        // Loại bỏ phần thập phân nếu là số nguyên
+        const integerAmount = numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount;
+        return integerAmount.toLocaleString('vi-VN') + ' VNĐ';
+    };
 
     if (!borrowRequest || returnItems.length === 0) return null;
 

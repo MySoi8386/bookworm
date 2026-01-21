@@ -34,7 +34,7 @@ const SettingsPage = () => {
 
     // Settings state
     const [settings, setSettings] = useState({
-        fine_rate_percent: 0.1,
+        fine_rate_percent: 5,
         max_borrow_days: 14,
         max_books_per_user: 5,
         min_deposit_amount: 100000
@@ -58,7 +58,7 @@ const SettingsPage = () => {
 
                 // Map API keys to component keys
                 const mappedSettings = {
-                    fine_rate_percent: parseFloat(data.fine_rate_percent) || 0.1,
+                    fine_rate_percent: parseFloat(data.fine_rate_percent) || 5,
                     max_borrow_days: parseInt(data.max_borrow_days) || 14,
                     max_books_per_user: parseInt(data.max_books_per_user) || 5,
                     min_deposit_amount: parseInt(data.min_deposit_amount) || 100000
@@ -159,14 +159,14 @@ const SettingsPage = () => {
         {
             key: 'fine_rate_percent',
             label: 'Phí phạt trễ hạn',
-            description: 'Phần trăm phạt mỗi ngày trễ (tính trên giá sách). Ví dụ: 0.1 = 10%',
+            description: 'Phần trăm phạt mỗi ngày trễ (tính trên giá sách). Ví dụ: 10 = 10%',
             icon: HiOutlineCash,
             unit: '%/ngày',
             color: 'red',
             type: 'number',
-            step: 0.01,
+            step: 1,
             min: 0,
-            max: 1
+            max: 100
         },
         {
             key: 'max_borrow_days',
@@ -303,7 +303,7 @@ const SettingsPage = () => {
                             const displayValue = item.key === 'min_deposit_amount'
                                 ? value.toLocaleString('vi-VN')
                                 : item.key === 'fine_rate_percent'
-                                    ? (value * 100).toFixed(1)
+                                    ? (value % 1 === 0 ? Math.floor(value) : parseFloat(value).toFixed(1))
                                     : value;
 
                             return (

@@ -38,11 +38,12 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
                 try {
                     setLoading(true);
                     const response = await api.get('/system/settings');
-                    const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+                    // Backend trả về { success: true, data: { min_deposit_amount: 200000, ... } }
+                    const settingsData = response?.data?.data || response?.data || {};
 
                     const getValue = (key, defaultVal) => {
-                        const setting = settings.find(s => s.setting_key === key);
-                        return setting ? parseInt(setting.setting_value) : defaultVal;
+                        const value = settingsData[key];
+                        return value !== undefined && value !== null ? parseInt(value) : defaultVal;
                     };
 
                     const newDefaults = {

@@ -44,9 +44,10 @@ const ReaderBorrowModal = ({ isOpen, onClose, onSuccess, book }) => {
             const loadSettings = async () => {
                 try {
                     const response = await api.get('/system/settings');
-                    const settings = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-                    const maxDays = settings.find(s => s.setting_key === 'max_borrow_days');
-                    const days = maxDays ? parseInt(maxDays.setting_value) : 14;
+                    // Backend trả về { success: true, data: { max_borrow_days: 14, ... } }
+                    const settingsData = response?.data?.data || response?.data || {};
+                    const maxDays = settingsData.max_borrow_days;
+                    const days = maxDays !== undefined && maxDays !== null ? parseInt(maxDays) : 14;
                     setMaxBorrowDays(days);
 
                     // Set default due date based on max_borrow_days
