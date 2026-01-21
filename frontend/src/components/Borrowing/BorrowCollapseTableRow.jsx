@@ -194,11 +194,7 @@ const BorrowCollapseTableRow = ({
     // Get latest return date from details
     const getLatestReturnDate = () => {
         if (!borrowRequest.details || borrowRequest.details.length === 0) return '-';
-        const returnDates = borrowRequest.details
-            .map(d => d.actual_return_date)
-            .filter(d => d)
-            .sort((a, b) => new Date(b) - new Date(a));
-        return returnDates.length > 0 ? formatDate(returnDates[0]) : '-';
+        return formatDate(borrowRequest.due_date);
     };
 
     return (
