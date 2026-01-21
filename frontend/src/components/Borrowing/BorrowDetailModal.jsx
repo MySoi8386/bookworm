@@ -7,7 +7,7 @@
 import Modal from '../Modal';
 import { HiOutlineUser, HiOutlineCalendar, HiOutlineBookOpen } from 'react-icons/hi';
 
-const BorrowDetailModal = ({ isOpen, onClose, borrowRequest }) => {
+const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
     if (!borrowRequest) return null;
 
     const getStatusBadge = (status) => {
@@ -62,11 +62,21 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest }) => {
 
                 {/* Dates */}
                 <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
+                    {activeTab === 'borrowed' ? (
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                            <HiOutlineCalendar className="w-5 h-5 mx-auto mb-2 text-gray-400" />
+                            <p className="text-xs text-gray-500 mb-1">Ngày mượn</p>
+                            <p className="font-semibold text-gray-900">{formatDate(borrowRequest.borrow_date)}</p>
+                        </div>
+                    ) : (
+                        <>
+                        </>
+                    )}
+                    {/* <div className="bg-gray-50 rounded-xl p-4 text-center">
                         <HiOutlineCalendar className="w-5 h-5 mx-auto mb-2 text-gray-400" />
                         <p className="text-xs text-gray-500 mb-1">Ngày mượn</p>
                         <p className="font-semibold text-gray-900">{formatDate(borrowRequest.borrow_date)}</p>
-                    </div>
+                    </div> */}
                     <div className="bg-gray-50 rounded-xl p-4 text-center">
                         <HiOutlineCalendar className="w-5 h-5 mx-auto mb-2 text-gray-400" />
                         <p className="text-xs text-gray-500 mb-1">Hạn trả</p>
