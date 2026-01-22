@@ -169,7 +169,11 @@ const FinancePage = () => {
         setConfirmModal({
             open: true,
             title: 'Thanh toán tiền phạt',
-            message: `Xác nhận thanh toán ${fine.amount?.toLocaleString('vi-VN')} VNĐ tiền phạt?`,
+            message: `Xác nhận thanh toán ${(() => {
+                const num = parseFloat(fine.amount) || 0;
+                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                return integerNum.toLocaleString('vi-VN');
+            })()} VNĐ tiền phạt?`,
             type: 'success',
             onConfirm: async () => {
                 try {
@@ -194,7 +198,11 @@ const FinancePage = () => {
         setConfirmModal({
             open: true,
             title: 'Xóa phiếu phạt',
-            message: `Bạn có chắc chắn muốn xóa phiếu phạt này? Số tiền: ${fine.amount?.toLocaleString('vi-VN')} VNĐ`,
+            message: `Bạn có chắc chắn muốn xóa phiếu phạt này? Số tiền: ${(() => {
+                const num = parseFloat(fine.amount) || 0;
+                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                return integerNum.toLocaleString('vi-VN');
+            })()} VNĐ`,
             type: 'danger',
             onConfirm: async () => {
                 try {

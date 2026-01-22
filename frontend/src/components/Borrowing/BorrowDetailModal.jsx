@@ -135,7 +135,11 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                             <div key={idx} className="flex justify-between text-sm">
                                 <span className="text-red-700">{fine.reason}</span>
                                 <span className="font-semibold text-red-900">
-                                    {fine.amount?.toLocaleString('vi-VN')} VNĐ
+                                    {(() => {
+                                        const num = parseFloat(fine.amount) || 0;
+                                        const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                                        return integerNum.toLocaleString('vi-VN');
+                                    })()} VNĐ
                                 </span>
                             </div>
                         ))}

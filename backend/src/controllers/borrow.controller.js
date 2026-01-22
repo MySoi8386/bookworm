@@ -728,8 +728,10 @@ const returnBooks = asyncHandler(async (req, res) => {
             // Lấy thông tin bản sách để tính phạt và cập nhật trạng thái
             const bookCopy = await BookCopy.findByPk(book_copy_id);
 
-            // Tính tiền phạt quá hạn
+            // Tính tiền phạt quá hạn (tính cả ngày hôm nay)
             const dueDate = new Date(borrowRequest.due_date);
+            dueDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
             const diffTime = today - dueDate;
             const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 

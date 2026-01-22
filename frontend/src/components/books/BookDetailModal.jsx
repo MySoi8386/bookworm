@@ -405,7 +405,11 @@ const BookDetailModal = ({ isOpen, onClose, book, onBorrow, onUpdate }) => {
                                                             </button>
                                                         </div>
                                                         <p className="text-xs text-gray-500">
-                                                            Giá hiện tại: {copies[0]?.price ? `${copies[0].price.toLocaleString('vi-VN')} VNĐ` : 'Chưa có'}
+                                                            Giá hiện tại: {copies[0]?.price ? (() => {
+                                                                const num = parseFloat(copies[0].price) || 0;
+                                                                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                                                                return `${integerNum.toLocaleString('vi-VN')} VNĐ`;
+                                                            })() : 'Chưa có'}
                                                         </p>
                                                     </div>
                                                 )}

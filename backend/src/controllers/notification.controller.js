@@ -78,7 +78,9 @@ const getOverdueUsers = asyncHandler(async (req, res) => {
 
         const readerId = reader.id;
         const dueDate = new Date(request.due_date);
-        const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
+        dueDate.setHours(0, 0, 0, 0);
+        const diffTime = today - dueDate;
+        const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (!userMap.has(readerId)) {
             userMap.set(readerId, {
@@ -206,9 +208,13 @@ const sendOverdueNotifications = asyncHandler(async (req, res) => {
         });
 
         const overdueBooks = [];
+        const todayForBooks = new Date();
+        todayForBooks.setHours(0, 0, 0, 0);
         overdueRequests.forEach(request => {
             const dueDate = new Date(request.due_date);
-            const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
+            dueDate.setHours(0, 0, 0, 0);
+            const diffTime = todayForBooks - dueDate;
+            const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
             request.details.forEach(detail => {
                 const book = detail.bookCopy?.bookEdition?.book;

@@ -106,7 +106,11 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
 
         // Validate deposit amount
         if (!isEdit && formData.deposit_amount < defaults.min_deposit_amount) {
-            toast.error(`Tiền cọc tối thiểu là ${defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ`);
+            toast.error(`Tiền cọc tối thiểu là ${(() => {
+                const num = parseFloat(defaults.min_deposit_amount) || 0;
+                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                return integerNum.toLocaleString('vi-VN');
+            })()} VNĐ`);
             return;
         }
 
@@ -223,7 +227,11 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 mb-1">Tiền cọc</p>
-                            <p className="font-semibold text-gray-900">{(card?.deposit_amount || 0).toLocaleString('vi-VN')} VNĐ</p>
+                            <p className="font-semibold text-gray-900">{(() => {
+                                const num = parseFloat(card?.deposit_amount) || 0;
+                                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                                return integerNum.toLocaleString('vi-VN');
+                            })()} VNĐ</p>
                         </div>
                     </div>
                 ) : (
@@ -309,11 +317,19 @@ const LibraryCardModal = ({ isOpen, onClose, onSuccess, member, card = null }) =
                                 }`}
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                            Tối thiểu: {defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ
+                            Tối thiểu: {(() => {
+                                const num = parseFloat(defaults.min_deposit_amount) || 0;
+                                const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                                return integerNum.toLocaleString('vi-VN');
+                            })()} VNĐ
                         </p>
                         {formData.deposit_amount < defaults.min_deposit_amount && (
                             <p className="text-xs text-red-500 mt-1">
-                                ⚠️ Tiền cọc phải ≥ {defaults.min_deposit_amount.toLocaleString('vi-VN')} VNĐ
+                                ⚠️ Tiền cọc phải ≥ {(() => {
+                                    const num = parseFloat(defaults.min_deposit_amount) || 0;
+                                    const integerNum = num % 1 === 0 ? Math.floor(num) : num;
+                                    return integerNum.toLocaleString('vi-VN');
+                                })()} VNĐ
                             </p>
                         )}
                     </div>

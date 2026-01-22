@@ -6,12 +6,15 @@
 
 /**
  * Format số tiền thành chuỗi tiền tệ VND
- * @param {number} amount - Số tiền cần format
- * @returns {string} - Chuỗi tiền tệ đã format, ví dụ: "1,234,567 VNĐ"
+ * @param {number|string} amount - Số tiền cần format
+ * @returns {string} - Chuỗi tiền tệ đã format, ví dụ: "1.234.567 VNĐ"
  */
 export const formatCurrency = (amount) => {
-    const num = parseFloat(amount) || 0;
-    return num.toLocaleString('vi-VN') + ' VNĐ';
+    // Parse về number để loại bỏ leading zero và xử lý string
+    const numAmount = parseFloat(amount) || 0;
+    // Loại bỏ phần thập phân nếu là số nguyên
+    const integerAmount = numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount;
+    return integerAmount.toLocaleString('vi-VN') + ' VNĐ';
 };
 
 /**

@@ -187,10 +187,14 @@ const getOverdueBooks = asyncHandler(async (req, res) => {
         order: [['due_date', 'ASC']]
     });
 
-    // Tính số ngày quá hạn và tiền phạt dự kiến
+    // Tính số ngày quá hạn và tiền phạt dự kiến (tính cả ngày hôm nay)
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const result = overdueRequests.map(request => {
-        const daysOverdue = Math.ceil((today - new Date(request.due_date)) / (1000 * 60 * 60 * 24));
+        const dueDate = new Date(request.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        const diffTime = today - dueDate;
+        const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         let estimatedFine = 0;
         request.details.forEach(detail => {
@@ -373,8 +377,13 @@ const generateWeeklyReminders = asyncHandler(async (req, res) => {
 
     const reminders = [];
 
+    const todayForReminders = new Date();
+    todayForReminders.setHours(0, 0, 0, 0);
     for (const request of overdueRequests) {
-        const daysOverdue = Math.ceil((today - new Date(request.due_date)) / (1000 * 60 * 60 * 24));
+        const dueDate = new Date(request.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        const diffTime = todayForReminders - dueDate;
+        const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         // Tạo nội dung phiếu nhắc
         let content = `Kính gửi ${request.libraryCard?.reader?.full_name || 'Độc giả'},\n\n`;

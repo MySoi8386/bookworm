@@ -86,7 +86,10 @@ const StatisticsPage = () => {
     }, [activeTab]);
 
     const formatCurrency = (amount) => {
-        return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
+        const numAmount = parseFloat(amount) || 0;
+        // Loại bỏ phần thập phân nếu là số nguyên
+        const integerAmount = numAmount % 1 === 0 ? Math.floor(numAmount) : numAmount;
+        return integerAmount.toLocaleString('vi-VN') + ' VNĐ';
     };
 
     if (loading) {
