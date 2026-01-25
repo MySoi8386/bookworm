@@ -14,9 +14,10 @@ import Header from './Header';
 
 /**
  * MainLayout Component
- * Layout wrapper cho tất cả các trang sau khi đăng nhập
+ * Layout wrapper cho tất cả các trang (cả public và authenticated)
+ * Hỗ trợ cả Outlet (cho routing) và children (cho direct component)
  */
-const MainLayout = () => {
+const MainLayout = ({ children }) => {
     return (
         <div className="min-h-screen bg-gray-100">
             {/* ===== SIDEBAR ===== */}
@@ -30,8 +31,9 @@ const MainLayout = () => {
 
                 {/* Page Content */}
                 <main className="p-4 lg:p-6 w-full max-w-full overflow-x-hidden">
-                    {/* Outlet sẽ render component của route hiện tại */}
-                    <Outlet />
+                    {/* Outlet sẽ render component của route hiện tại (cho routing) */}
+                    {/* children sẽ render component được truyền vào (cho direct usage) */}
+                    {children || <Outlet />}
                 </main>
             </div>
         </div>

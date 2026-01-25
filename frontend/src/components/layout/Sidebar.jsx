@@ -34,7 +34,18 @@ import Logo from '../../assets/logo.svg';
  * Kích thước: 222px x 100vh (theo Figma)
  */
 const Sidebar = () => {
-    const { isAdmin, isStaff, isReader } = useAuth();
+    const { isAdmin, isStaff, isReader, isAuthenticated } = useAuth();
+
+    /**
+     * Menu items cho Guest (chưa đăng nhập) - chỉ có Tủ sách
+     */
+    const guestMenuItems = [
+        {
+            path: '/',
+            icon: HiOutlineCollection,
+            label: 'Tủ sách',
+        },
+    ];
 
     /**
      * Menu items cho Admin/Librarian (Staff)
@@ -144,7 +155,10 @@ const Sidebar = () => {
     // Chọn menu items dựa trên role
     let menuItems = [];
 
-    if (isStaff()) {
+    if (!isAuthenticated) {
+        // Guest (chưa đăng nhập) - chỉ có Tủ sách
+        menuItems = guestMenuItems;
+    } else if (isStaff()) {
         menuItems = [...staffMenuItems];
         if (isAdmin()) {
             menuItems = [...menuItems, ...adminOnlyItems];

@@ -6,7 +6,7 @@
 
 /**
  * Format số tiền thành chuỗi tiền tệ VND
- * @param {number|string} amount - Số tiền cần format
+* @param {number|string} amount - Số tiền cần format
  * @returns {string} - Chuỗi tiền tệ đã format, ví dụ: "1.234.567 VNĐ"
  */
 export const formatCurrency = (amount) => {

@@ -64,8 +64,15 @@ function App() {
           {/* Trang xác nhận email */}
           <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
-          {/* Redirect root về dashboard hoặc login */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Trang tủ sách công khai - không cần đăng nhập nhưng có layout */}
+          <Route
+            path="/"
+            element={
+              <MainLayout>
+                <SearchPage />
+              </MainLayout>
+            }
+          />
 
           {/* ===== PROTECTED ROUTES ===== */}
           {/* Các trang yêu cầu đăng nhập */}
@@ -166,7 +173,7 @@ function App() {
             {/* Sách của tôi */}
             <Route path="/my-books" element={<MyBooksPage />} />
 
-            {/* Tìm sách */}
+            {/* Tìm sách (cho user đã đăng nhập) */}
             <Route path="/search" element={<SearchPage />} />
 
             {/* Tài chính cá nhân */}

@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
     HiOutlineSearch,
@@ -23,6 +24,7 @@ import { ReaderBorrowModal } from '../../components/reader';
 import { BookDetailModal } from '../../components';
 
 const SearchPage = () => {
+    const { isAuthenticated } = useAuth();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -122,11 +124,28 @@ const SearchPage = () => {
         setDebouncedSearch('');
     };
 
+    /**
+     * Handle borrow button click
+     * - Nếu đã login: mở modal mượn sách như cũ
+     * - Nếu chưa login: mở tab mới với trang login
+     */
+    const handleBorrowClick = (book) => {
+        if (isAuthenticated) {
+            // User đã login: mở modal mượn sách
+            setSelectedBook(book);
+            setBorrowModalOpen(true);
+        } else {
+            // User chưa login: mở tab mới với trang login
+            const loginUrl = `${window.location.origin}/login`;
+            window.open(loginUrl, '_blank');
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Tìm kiếm sách</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Tủ sách</h1>
                 <p className="text-gray-500 text-sm mt-1">Khám phá kho sách thư viện</p>
             </div>
 
@@ -296,10 +315,7 @@ const SearchPage = () => {
                                         </button>
                                         {(book.available_copies || 0) > 0 && (
                                             <button
-                                                onClick={() => {
-                                                    setSelectedBook(book);
-                                                    setBorrowModalOpen(true);
-                                                }}
+                                                onClick={() => handleBorrowClick(book)}
                                                 className="flex-1 px-3 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-1"
                                             >
                                                 <HiOutlinePlus className="w-4 h-4" />
