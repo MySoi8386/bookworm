@@ -380,21 +380,22 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         throw new AppError('Bạn đã mượn/đang chờ duyệt đầu sách này. Không thể mượn thêm từ NXB khác.', 400);
     }
 
-    // Kiểm tra số sách đang mượn (chỉ đếm borrowed và overdue, không đếm approved)
-    const currentBorrowed = await BorrowDetail.count({
+    // Kiểm tra số phiếu/sách đang "tồn" (pending/approved/borrowed/overdue)
+    // Mục tiêu: tránh tạo vô hạn phiếu chờ duyệt gây áp lực cho thủ thư.
+    const currentActiveBorrow = await BorrowDetail.count({
         include: [{
             model: BorrowRequest,
             as: 'borrowRequest',
             where: {
                 library_card_id: cardId,
-                status: { [Op.in]: ['borrowed', 'overdue'] }
+                status: { [Op.in]: ['pending', 'approved', 'borrowed', 'overdue'] }
             }
         }],
         where: { actual_return_date: null }
     });
 
     // Kiểm tra nếu tạo phiếu mới sẽ vượt quá giới hạn
-    if (currentBorrowed + book_copy_ids.length > maxBooksPerUser) {
+    if (currentActiveBorrow + book_copy_ids.length > maxBooksPerUser) {
         throw new AppError(
             'Bạn đã mượn quá số sách. Không thể thực hiện tạo phiếu mượn',
             400
@@ -561,6 +562,37 @@ const issueBooks = asyncHandler(async (req, res) => {
     const allowedForIssue = ['pending', 'approved'];
     if (!allowedForIssue.includes(borrowRequest.status)) {
         throw new AppError('Chỉ có thể xuất sách cho phiếu chờ duyệt hoặc đã duyệt', 400);
+    }
+
+    // --- LẤY CẤU HÌNH HỆ THỐNG ---
+    const { SystemSetting } = require('../models');
+    const { defaultMaxBooks } = require('../config/auth');
+    const getSetting = async (key, defaultVal) => {
+        const setting = await SystemSetting.findOne({ where: { setting_key: key } });
+        return setting ? parseInt(setting.setting_value) : defaultVal;
+    };
+    const maxBooksPerUser = await getSetting('max_books_per_user', defaultMaxBooks);
+
+    const copiesToIssue = borrowRequest.details?.length || 0;
+    if (copiesToIssue < 1) {
+        throw new AppError('Phiếu mượn không có sách để xuất', 400);
+    }
+
+    // --- KIỂM TRA SỐ SÁCH ĐANG MƯỢN (borrowed/overdue) ---
+    const currentBorrowed = await BorrowDetail.count({
+        include: [{
+            model: BorrowRequest,
+            as: 'borrowRequest',
+            where: {
+                library_card_id: borrowRequest.library_card_id,
+                status: { [Op.in]: ['borrowed', 'overdue'] }
+            }
+        }],
+        where: { actual_return_date: null }
+    });
+
+    if (currentBorrowed + copiesToIssue > maxBooksPerUser) {
+        throw new AppError('Bạn đã mượn quá số sách. Không thể thực hiện xuất sách', 400);
     }
 
     const transaction = await sequelize.transaction();

@@ -234,10 +234,11 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
             const errorData = error.response?.data;
             const errorMessage = errorData?.message || error.message || 'Lỗi tạo phiếu mượn. Vui lòng thử lại.';
 
-            // Kiểm tra nếu là lỗi quá số sách được mượn
+            // Kiểm tra các lỗi cần hiển thị popup
             const isMaxBooksError = errorMessage.includes('mượn quá số sách') || errorMessage.includes('quá số sách');
+            const isDuplicateBookError = errorMessage.includes('đã mượn/đang chờ duyệt đầu sách này') || errorMessage.includes('không thể mượn thêm từ NXB khác');
 
-            if (isMaxBooksError) {
+            if (isMaxBooksError || isDuplicateBookError) {
                 // Hiển thị popup thay vì toast
                 setAlertModal({
                     open: true,
