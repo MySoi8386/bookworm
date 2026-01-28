@@ -210,6 +210,9 @@ const ReturnPage = () => {
                                            <div className="text-sm text-gray-900 font-medium line-clamp-2" title={req.details?.[0]?.bookCopy?.bookEdition?.book?.title}>
                                                {req.details?.[0]?.bookCopy?.bookEdition?.book?.title || 'Không rõ tên sách'}
                                            </div>
+                                           <div className="text-xs text-gray-500 mt-1">
+                                               Mã: {req.details?.[0]?.bookCopy?.bookEdition?.book?.code || '-'}
+                                           </div>
                                            {req.details?.length > 1 && <span className="text-xs text-gray-500 mt-1 block">+{req.details.length - 1} cuốn khác</span>}
                                        </td>
                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDate(req.borrow_date)}</td>
