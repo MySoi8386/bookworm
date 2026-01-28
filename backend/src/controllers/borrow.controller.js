@@ -654,6 +654,9 @@ const rejectBorrowRequest = asyncHandler(async (req, res) => {
     await borrowRequest.update({
         status: 'rejected',
         approved_by: staff?.id,
+        rejected_at: new Date(),
+        reject_reason: req.body.reason,
+        // Giữ notes để tương thích UI hiện tại (nếu đang hiển thị notes)
         notes: req.body.reason
     });
 

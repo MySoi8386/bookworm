@@ -20,6 +20,7 @@ export { default as AuthPromptModal } from './AuthPromptModal';
 export {
     BorrowDetailModal,
     CreateBorrowModal,
+    RejectBorrowModal,
     ExtendModal,
     ReturnBookModal,
     ReturnBookCollapse,

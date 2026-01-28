@@ -28,6 +28,8 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
     };
 
     const isPendingTab = activeTab === 'pending';
+    const isRejectedTab = activeTab === 'rejected';
+    const showBookReturnStatus = !(isPendingTab || isRejectedTab);
     const displayStatus = isPendingTab ? { text: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800' } : getStatusBadge(borrowRequest.status);
     const reader = borrowRequest.libraryCard?.reader;
 
@@ -105,7 +107,7 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                                         <p className="font-medium text-gray-900">{book?.title || 'Không rõ'}</p>
                                         <p className="text-sm text-gray-500">Mã: {book?.code || '-'}</p>
                                     </div>
-                                    {!isPendingTab && (
+                                    {showBookReturnStatus && (
                                         detail.actual_return_date ? (
                                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                                 Đã trả {formatDate(detail.actual_return_date)}
@@ -122,12 +124,21 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                     </div>
                 </div>
 
-                {/* Notes */}
-                {borrowRequest.notes && (
-                    <div className="bg-blue-50 rounded-xl p-4">
-                        <p className="text-sm font-medium text-blue-900 mb-1">Ghi chú</p>
-                        <p className="text-sm text-blue-700">{borrowRequest.notes}</p>
-                    </div>
+                {/* Notes / Reject reason */}
+                {isRejectedTab ? (
+                    (borrowRequest.reject_reason || borrowRequest.notes) && (
+                        <div className="bg-red-50 rounded-xl p-4">
+                            <p className="text-sm font-medium text-red-900 mb-1">Lý do huỷ</p>
+                            <p className="text-sm text-red-700">{borrowRequest.reject_reason || borrowRequest.notes}</p>
+                        </div>
+                    )
+                ) : (
+                    borrowRequest.notes && (
+                        <div className="bg-blue-50 rounded-xl p-4">
+                            <p className="text-sm font-medium text-blue-900 mb-1">Ghi chú</p>
+                            <p className="text-sm text-blue-700">{borrowRequest.notes}</p>
+                        </div>
+                    )
                 )}
 
                 {/* Fines */}

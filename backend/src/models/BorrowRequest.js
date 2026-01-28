@@ -71,6 +71,20 @@ module.exports = (sequelize) => {
             comment: 'Trạng thái: pending-chờ duyệt, approved-đã duyệt, rejected-từ chối, borrowed-đang mượn, returned-đã trả, overdue-quá hạn'
         },
 
+        // Ngày huỷ / từ chối
+        rejected_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Ngày huỷ/từ chối phiếu'
+        },
+
+        // Lý do huỷ / từ chối
+        reject_reason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            comment: 'Lý do huỷ/từ chối phiếu'
+        },
+
         // Ghi chú
         notes: {
             type: DataTypes.TEXT,

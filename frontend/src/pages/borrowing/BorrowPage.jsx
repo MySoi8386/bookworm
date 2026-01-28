@@ -16,7 +16,7 @@ import {
    HiOutlineUserGroup,
    HiOutlineRefresh
 } from 'react-icons/hi';
-import { ConfirmModal, BorrowDetailModal, CreateBorrowModal } from '../../components';
+import { ConfirmModal, BorrowDetailModal, CreateBorrowModal, RejectBorrowModal } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 
 
@@ -31,6 +31,7 @@ const BorrowPage = () => {
    const [selectedRequest, setSelectedRequest] = useState(null);
    const [detailModalOpen, setDetailModalOpen] = useState(false);
    const [createModalOpen, setCreateModalOpen] = useState(false);
+   const [rejectModalOpen, setRejectModalOpen] = useState(false);
    const [confirmModal, setConfirmModal] = useState({ open: false, type: 'warning', title: '', message: '', onConfirm: null });
    const [actionLoading, setActionLoading] = useState(false);
 
@@ -102,18 +103,7 @@ const BorrowPage = () => {
 
    const handleReject = (request) => {
        setSelectedRequest(request);
-       setConfirmModal({
-           open: true, type: 'danger', title: 'Từ chối', message: `Từ chối phiếu #${request.id}?`,
-           onConfirm: async () => {
-               try {
-                   setActionLoading(true);
-                   await rejectBorrowRequest(request.id, 'Nhân viên từ chối');
-                   toast.success('Đã từ chối');
-                   setConfirmModal(prev => ({ ...prev, open: false }));
-                   fetchData();
-               } catch (error) { toast.error(error.response?.data?.message || 'Lỗi'); } finally { setActionLoading(false); }
-           }
-       });
+       setRejectModalOpen(true);
    };
 
 
@@ -225,6 +215,25 @@ const BorrowPage = () => {
 
            <CreateBorrowModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} onSuccess={fetchData} />
            <BorrowDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} borrowRequest={selectedRequest} activeTab={activeTab} />
+           <RejectBorrowModal
+               isOpen={rejectModalOpen}
+               onClose={() => setRejectModalOpen(false)}
+               borrowRequestId={selectedRequest?.id}
+               loading={actionLoading}
+               onConfirm={async (reason) => {
+                   try {
+                       setActionLoading(true);
+                       await rejectBorrowRequest(selectedRequest.id, reason);
+                       toast.success('Đã huỷ phiếu');
+                       setRejectModalOpen(false);
+                       fetchData();
+                   } catch (error) {
+                       toast.error(error.response?.data?.message || 'Lỗi');
+                   } finally {
+                       setActionLoading(false);
+                   }
+               }}
+           />
            <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ ...confirmModal, open: false })} onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message} type={confirmModal.type} loading={actionLoading} />
        </div>
    );
