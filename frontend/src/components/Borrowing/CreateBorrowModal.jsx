@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import Modal from '../Modal';
+import AlertModal from '../AlertModal';
 import { api } from '../../services';
 import toast from 'react-hot-toast';
 import { HiOutlineSearch, HiOutlineUser, HiOutlineBookOpen, HiOutlineX, HiOutlinePlus } from 'react-icons/hi';
@@ -35,6 +36,9 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
     const [dueDate, setDueDate] = useState('');
     const [notes, setNotes] = useState('');
     const [maxBorrowDays, setMaxBorrowDays] = useState(14); // Default, will be fetched from settings
+
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ open: false, message: '', type: 'danger' });
 
     // Search readers
     useEffect(() => {
@@ -228,22 +232,35 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
 
             // Xử lý lỗi chi tiết
             const errorData = error.response?.data;
+            const errorMessage = errorData?.message || error.message || 'Lỗi tạo phiếu mượn. Vui lòng thử lại.';
 
-            // Nếu có mảng errors (validation errors)
-            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-                // Hiển thị từng lỗi validation
-                errorData.errors.forEach((err, index) => {
-                    const fieldName = err.field || 'Dữ liệu';
-                    const message = err.message || 'Không hợp lệ';
-                    toast.error(`${fieldName}: ${message}`, {
-                        duration: 4000,
-                        id: `borrow-error-${index}` // Tránh duplicate toast
-                    });
+            // Kiểm tra nếu là lỗi quá số sách được mượn
+            const isMaxBooksError = errorMessage.includes('mượn quá số sách') || errorMessage.includes('quá số sách');
+
+            if (isMaxBooksError) {
+                // Hiển thị popup thay vì toast
+                setAlertModal({
+                    open: true,
+                    message: errorMessage,
+                    type: 'danger'
                 });
             } else {
-                // Hiển thị message chính
-                const errorMessage = errorData?.message || error.message || 'Lỗi tạo phiếu mượn. Vui lòng thử lại.';
-                toast.error(errorMessage, { duration: 5000 });
+                // Các lỗi khác vẫn dùng toast
+                // Nếu có mảng errors (validation errors)
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    // Hiển thị từng lỗi validation
+                    errorData.errors.forEach((err, index) => {
+                        const fieldName = err.field || 'Dữ liệu';
+                        const message = err.message || 'Không hợp lệ';
+                        toast.error(`${fieldName}: ${message}`, {
+                            duration: 4000,
+                            id: `borrow-error-${index}` // Tránh duplicate toast
+                        });
+                    });
+                } else {
+                    // Hiển thị message chính
+                    toast.error(errorMessage, { duration: 5000 });
+                }
             }
         } finally {
             setSubmitting(false);
@@ -620,6 +637,16 @@ const CreateBorrowModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                 </div>
             )}
+
+            {/* Alert Modal for max books error */}
+            <AlertModal
+                isOpen={alertModal.open}
+                onClose={() => setAlertModal({ ...alertModal, open: false })}
+                title="Không thể tạo phiếu mượn"
+                message={alertModal.message}
+                type={alertModal.type}
+                buttonText="Đã hiểu"
+            />
         </Modal>
     );
 };
