@@ -380,22 +380,23 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         throw new AppError('Bạn đã mượn/đang chờ duyệt đầu sách này. Không thể mượn thêm từ NXB khác.', 400);
     }
 
-    // Kiểm tra số sách đang mượn
+    // Kiểm tra số sách đang mượn (chỉ đếm borrowed và overdue, không đếm approved)
     const currentBorrowed = await BorrowDetail.count({
         include: [{
             model: BorrowRequest,
             as: 'borrowRequest',
             where: {
                 library_card_id: cardId,
-                status: { [Op.in]: ['borrowed', 'approved'] }
+                status: { [Op.in]: ['borrowed', 'overdue'] }
             }
         }],
         where: { actual_return_date: null }
     });
 
+    // Kiểm tra nếu tạo phiếu mới sẽ vượt quá giới hạn
     if (currentBorrowed + book_copy_ids.length > maxBooksPerUser) {
         throw new AppError(
-            `Vượt quá số sách tối đa được mượn (${maxBooksPerUser}). Đang mượn: ${currentBorrowed}`,
+            'Bạn đã mượn quá số sách. Không thể thực hiện tạo phiếu mượn',
             400
         );
     }
