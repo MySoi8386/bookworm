@@ -14,6 +14,7 @@ export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as Modal } from './Modal';
 export { default as ConfirmModal } from './ConfirmModal';
 export { default as AlertModal } from './AlertModal';
+export { default as AuthPromptModal } from './AuthPromptModal';
 
 // Borrowing-specific modals
 export {

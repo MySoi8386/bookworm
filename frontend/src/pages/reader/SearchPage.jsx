@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import {
     HiOutlineSearch,
     HiOutlineBookOpen,
@@ -21,10 +22,11 @@ import {
     HiOutlinePlus
 } from 'react-icons/hi';
 import { ReaderBorrowModal } from '../../components/reader';
-import { BookDetailModal } from '../../components';
+import { BookDetailModal, AuthPromptModal } from '../../components';
 
 const SearchPage = () => {
     const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +47,7 @@ const SearchPage = () => {
     const [selectedBook, setSelectedBook] = useState(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [borrowModalOpen, setBorrowModalOpen] = useState(false);
+    const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
     // Debounce search
     useEffect(() => {
@@ -135,9 +138,9 @@ const SearchPage = () => {
             setSelectedBook(book);
             setBorrowModalOpen(true);
         } else {
-            // User chưa login: mở tab mới với trang login
-            const loginUrl = `${window.location.origin}/login`;
-            window.open(loginUrl, '_blank');
+            // User chưa login: mở popup đăng nhập/đăng ký
+            setSelectedBook(book);
+            setAuthPromptOpen(true);
         }
     };
 
@@ -387,6 +390,19 @@ const SearchPage = () => {
                     fetchBooks();
                 }}
                 book={selectedBook}
+            />
+
+            <AuthPromptModal
+                isOpen={authPromptOpen}
+                onClose={() => setAuthPromptOpen(false)}
+                onLogin={() => {
+                    setAuthPromptOpen(false);
+                    navigate('/login');
+                }}
+                onRegister={() => {
+                    setAuthPromptOpen(false);
+                    navigate('/register');
+                }}
             />
         </div>
     );
