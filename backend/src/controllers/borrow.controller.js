@@ -386,6 +386,7 @@ const createBorrowRequest = asyncHandler(async (req, res) => {
         include: [{
             model: BorrowRequest,
             as: 'borrowRequest',
+            required: true,
             where: {
                 library_card_id: cardId,
                 status: { [Op.in]: ['pending', 'approved', 'borrowed', 'overdue'] }
@@ -583,6 +584,7 @@ const issueBooks = asyncHandler(async (req, res) => {
         include: [{
             model: BorrowRequest,
             as: 'borrowRequest',
+            required: true,
             where: {
                 library_card_id: borrowRequest.library_card_id,
                 status: { [Op.in]: ['borrowed', 'overdue'] }
