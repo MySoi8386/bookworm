@@ -200,12 +200,14 @@ const BorrowPage = () => {
                                        <td className="px-6 py-4">
                                            <div className="flex items-center justify-center gap-1">
                                                <button onClick={() => handleViewDetail(req)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500" title="Chi tiết"><HiOutlineEye className="w-5 h-5" /></button>
+                                               {/* Chỉ hiển thị nút Huỷ và Xuất sách ở tab Chờ duyệt */}
                                                {activeTab === 'pending' && !isAdmin && (
                                                    <>
                                                        <button onClick={() => handleReject(req)} className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600" title="Huỷ"><HiOutlineX className="w-5 h-5" /></button>
                                                        <button onClick={() => handleIssue(req)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600" title="Xuất sách"><HiOutlineBookOpen className="w-5 h-5" /></button>
                                                    </>
                                                )}
+                                               {/* Tab Huỷ và Đang mượn chỉ có nút Detail */}
                                            </div>
                                        </td>
                                    </tr>

@@ -27,7 +27,8 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
         return new Date(dateStr).toLocaleDateString('vi-VN');
     };
 
-    const status = getStatusBadge(borrowRequest.status);
+    const isPendingTab = activeTab === 'pending';
+    const displayStatus = isPendingTab ? { text: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800' } : getStatusBadge(borrowRequest.status);
     const reader = borrowRequest.libraryCard?.reader;
 
     return (
@@ -39,8 +40,8 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                         <p className="text-sm text-gray-500">Mã phiếu</p>
                         <p className="text-xl font-bold text-gray-900">#{borrowRequest.id}</p>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${status.color}`}>
-                        {status.text}
+                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${displayStatus.color}`}>
+                        {displayStatus.text}
                     </span>
                 </div>
 
@@ -104,14 +105,16 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                                         <p className="font-medium text-gray-900">{book?.title || 'Không rõ'}</p>
                                         <p className="text-sm text-gray-500">Mã: {book?.code || '-'}</p>
                                     </div>
-                                    {detail.actual_return_date ? (
-                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                            Đã trả {formatDate(detail.actual_return_date)}
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                                            Chưa trả
-                                        </span>
+                                    {!isPendingTab && (
+                                        detail.actual_return_date ? (
+                                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                                Đã trả {formatDate(detail.actual_return_date)}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                                Chưa trả
+                                            </span>
+                                        )
                                     )}
                                 </div>
                             );
