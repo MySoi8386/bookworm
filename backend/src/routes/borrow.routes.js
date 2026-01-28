@@ -37,6 +37,16 @@ router.get('/', authenticate, staffOnly, searchBorrowRequestValidator, validate,
 router.get('/my', authenticate, authenticated, borrowController.getMyBorrowRequests);
 
 /**
+ * @route   GET /api/borrow-requests/rejected
+ * @desc    Lấy danh sách phiếu mượn đã huỷ (cho nhân viên)
+ * @access  Admin, Librarian
+ */
+router.get('/rejected', authenticate, staffOnly, searchBorrowRequestValidator, validate, (req, res, next) => {
+    req.query.status = 'rejected';
+    return borrowController.getBorrowRequests(req, res, next);
+});
+
+/**
  * @route   GET /api/borrow-requests/:id
  * @desc    Lấy chi tiết phiếu mượn
  * @access  Admin, Librarian, Reader (self)

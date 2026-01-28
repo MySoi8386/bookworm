@@ -19,6 +19,15 @@ export const getBorrowRequests = async (params = {}) => {
 };
 
 /**
+ * Lấy danh sách phiếu mượn đã huỷ (cho staff)
+ * @param {Object} params - { page, limit, library_card_id, from_date, to_date }
+ */
+export const getRejectedBorrowRequests = async (params = {}) => {
+    const response = await api.get('/borrow-requests/rejected', { params });
+    return response;
+};
+
+/**
  * Lấy phiếu mượn của tôi (cho reader)
  * @param {Object} params - { status, page, limit }
  */

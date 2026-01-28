@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
    getBorrowRequests,
+   getRejectedBorrowRequests,
    issueBooks,
    rejectBorrowRequest,
    getBorrowRequestById
@@ -41,9 +42,10 @@ const BorrowPage = () => {
    const fetchData = useCallback(async () => {
        try {
            setLoading(true);
-           const statusParam = activeTab === 'pending' ? 'pending,approved' : activeTab;
-           const params = { page: pagination.page, limit: pagination.limit, status: statusParam };
-           const response = await getBorrowRequests(params);
+           const params = { page: pagination.page, limit: pagination.limit };
+           const response = activeTab === 'rejected'
+               ? await getRejectedBorrowRequests(params)
+               : await getBorrowRequests({ ...params, status: activeTab === 'pending' ? 'pending,approved' : activeTab });
           
            const requestsData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
           
@@ -143,7 +145,8 @@ const BorrowPage = () => {
                <div className="flex flex-wrap gap-2">
                    {[
                        { key: 'pending', label: 'Chờ duyệt' },
-                       { key: 'borrowed', label: 'Đang mượn' }
+                       { key: 'borrowed', label: 'Đang mượn' },
+                       { key: 'rejected', label: 'Huỷ' }
                    ].map(({ key, label }) => (
                        <button key={key} onClick={() => setActiveTab(key)} className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${activeTab === key ? 'bg-black text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                            {label}
