@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getFines, payFine, getDeposits } from '../../services/financeService';
+import { getFines, payFine, payAllFines, getDeposits } from '../../services/financeService';
 import { api } from '../../services';
 import toast from 'react-hot-toast';
 import {
@@ -236,6 +236,16 @@ const FinancePage = () => {
     };
 
     /**
+     * Group fines by borrow_request_id
+     */
+    const groupedFines = fines.reduce((acc, fine) => {
+        const key = fine.borrow_request_id || 'no-borrow';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(fine);
+        return acc;
+    }, {});
+
+    /**
      * Format date
      */
     const formatDate = (dateStr) => {
@@ -415,24 +425,27 @@ const FinancePage = () => {
                                         </td>
                                     </tr>
                                 ) : fines.length > 0 ? (
-                                    fines.map((fine) => (
-                                        <tr key={fine.id} className="hover:bg-gray-50 transition-colors">
+                                    Object.entries(groupedFines).map(([borrowRequestId, group]) => {
+                                        const firstFine = group[0];
+                                        const totalAmount = group.reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+                                        const daysOverdue = calculateDaysOverdue(firstFine.borrowRequest?.due_date);
+                                        const isPaidGroup = group.every(f => f.status === 'paid');
+
+                                        return (
+                                        <tr key={borrowRequestId} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4">
                                                 <p className="font-medium text-gray-900 text-sm">
-                                                    {fine.borrowRequest?.libraryCard?.reader?.full_name || '-'}
+                                                    {firstFine.borrowRequest?.libraryCard?.reader?.full_name || '-'}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {fine.borrowRequest?.libraryCard?.reader?.phone || '-'}
+                                                    {firstFine.borrowRequest?.libraryCard?.reader?.phone || '-'}
                                                 </p>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
-                                                {fine.bookCopy?.bookEdition?.book?.title || '-'}
+                                                {firstFine.bookCopy?.bookEdition?.book?.title || '-'}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {(() => {
-                                                    const dueDate = fine.borrowRequest?.due_date;
-                                                    const daysOverdue = calculateDaysOverdue(dueDate);
-                                                    
                                                     if (daysOverdue > 0) {
                                                         return (
                                                             <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
@@ -446,7 +459,7 @@ const FinancePage = () => {
                                                     }
                                                     
                                                     // Nếu không quá hạn, hiển thị reason nếu có
-                                                    if (fine.reason) {
+                                                    if (firstFine.reason) {
                                                         return (
                                                             <span className="text-sm text-gray-600">{fine.reason}</span>
                                                         );
@@ -457,48 +470,69 @@ const FinancePage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <span className="font-semibold text-gray-900">
-                                                    {formatCurrency(fine.amount)}
+                                                    {formatCurrency(totalAmount)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${fine.status === 'paid'
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${isPaidGroup
                                                     ? 'bg-green-100 text-green-800'
                                                     : 'bg-yellow-100 text-yellow-800'
                                                     }`}>
-                                                    {fine.status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                                    {isPaidGroup ? 'Đã thanh toán' : 'Chưa thanh toán'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                {fine.status === 'pending' && (
+                                                {!isPaidGroup && (
                                                     <>
-                                                        {/* Librarian: Thu tiền phạt */}
+                                                        {/* Librarian: Thu tiền phạt cho cả phiếu mượn */}
                                                         {!isAdmin && (
                                                             <button
-                                                                onClick={() => handlePayFine(fine)}
+                                                                onClick={() => {
+                                                                    setConfirmModal({
+                                                                        open: true,
+                                                                        title: 'Thanh toán tiền phạt',
+                                                                        message: `Xác nhận thanh toán ${formatCurrency(totalAmount)} cho tất cả phiếu phạt của phiếu mượn #${borrowRequestId}?`,
+                                                                        type: 'success',
+                                                                        onConfirm: async () => {
+                                                                            try {
+                                                                                setActionLoading(true);
+                                                                                await payAllFines(borrowRequestId);
+                                                                                toast.success('Đã thanh toán tất cả tiền phạt của phiếu mượn');
+                                                                                setConfirmModal(prev => ({ ...prev, open: false }));
+                                                                                fetchFines();
+                                                                            } catch (error) {
+                                                                                toast.error(error.message || 'Lỗi thanh toán');
+                                                                            } finally {
+                                                                                setActionLoading(false);
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }}
                                                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                                                             >
-                                                                Thu tiền
+                                                                Thu tiền (gộp)
                                                             </button>
                                                         )}
                                                         {/* Admin: Xóa phiếu phạt (không thu tiền) */}
                                                         {isAdmin && (
                                                             <button
-                                                                onClick={() => handleDeleteFine(fine)}
+                                                                onClick={() => group.forEach(f => handleDeleteFine(f))}
                                                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                                                             >
-                                                                Xóa
+                                                                Xóa tất cả
                                                             </button>
                                                         )}
                                                     </>
                                                 )}
-                                                {fine.status === 'paid' && (
+                                                {isPaidGroup && (
                                                     <span className="text-gray-400 text-sm">
-                                                        {formatDate(fine.paid_date)}
+                                                        {formatDate(firstFine.paid_date)}
                                                     </span>
                                                 )}
                                             </td>
                                         </tr>
-                                    ))
+                                    );
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan="6" className="px-6 py-16 text-center">
