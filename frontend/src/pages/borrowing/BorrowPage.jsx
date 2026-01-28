@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
    getBorrowRequests,
-   approveBorrowRequest,
    issueBooks,
    rejectBorrowRequest,
    getBorrowRequestById
@@ -11,7 +10,6 @@ import {
    HiOutlineSearch,
    HiOutlinePlus,
    HiOutlineEye,
-   HiOutlineCheck,
    HiOutlineX,
    HiOutlineBookOpen,
    HiOutlineUserGroup,
@@ -19,13 +17,6 @@ import {
 } from 'react-icons/hi';
 import { ConfirmModal, BorrowDetailModal, CreateBorrowModal } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
-
-
-const STATUS_CONFIG = {
-   pending: { text: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-500' },
-   approved: { text: 'Đã duyệt', color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-500' },
-   borrowed: { text: 'Đang mượn', color: 'bg-green-100 text-green-800', dotColor: 'bg-green-500' },
-};
 
 
 const BorrowPage = () => {
@@ -50,7 +41,8 @@ const BorrowPage = () => {
    const fetchData = useCallback(async () => {
        try {
            setLoading(true);
-           const params = { page: pagination.page, limit: pagination.limit, status: activeTab };
+           const statusParam = activeTab === 'pending' ? 'pending,approved' : activeTab;
+           const params = { page: pagination.page, limit: pagination.limit, status: statusParam };
            const response = await getBorrowRequests(params);
           
            const requestsData = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
@@ -89,23 +81,6 @@ const BorrowPage = () => {
    };
 
 
-   const handleApprove = (request) => {
-       setSelectedRequest(request);
-       setConfirmModal({
-           open: true, type: 'success', title: 'Duyệt phiếu', message: `Duyệt phiếu #${request.id}?`,
-           onConfirm: async () => {
-               try {
-                   setActionLoading(true);
-                   await approveBorrowRequest(request.id);
-                   toast.success('Đã duyệt');
-                   setConfirmModal(prev => ({ ...prev, open: false }));
-                   fetchData();
-               } catch (error) { toast.error(error.response?.data?.message || 'Lỗi'); } finally { setActionLoading(false); }
-           }
-       });
-   };
-
-
    const handleIssue = (request) => {
        setSelectedRequest(request);
        setConfirmModal({
@@ -141,8 +116,6 @@ const BorrowPage = () => {
 
 
    const formatDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '-';
-   const getStatusBadge = (s) => STATUS_CONFIG[s] || STATUS_CONFIG.pending;
-
 
    const filteredRequests = borrowRequests.filter(req => {
        if (!searchQuery) return true;
@@ -168,9 +141,12 @@ const BorrowPage = () => {
 
            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                <div className="flex flex-wrap gap-2">
-                   {['pending', 'approved', 'borrowed'].map(key => (
+                   {[
+                       { key: 'pending', label: 'Chờ duyệt' },
+                       { key: 'borrowed', label: 'Đang mượn' }
+                   ].map(({ key, label }) => (
                        <button key={key} onClick={() => setActiveTab(key)} className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${activeTab === key ? 'bg-black text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                           {key === 'pending' ? 'Chờ duyệt' : key === 'approved' ? 'Đã duyệt' : 'Đang mượn'}
+                           {label}
                        </button>
                    ))}
                </div>
@@ -194,14 +170,11 @@ const BorrowPage = () => {
                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/3">Tên sách</th>
                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">{activeTab === 'borrowed' ? 'Ngày mượn' : 'Ngày tạo'}</th>
                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hạn trả</th>
-                               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
                            </tr>
                        </thead>
                        <tbody className="divide-y divide-gray-100">
-                           {filteredRequests.length > 0 ? filteredRequests.map(req => {
-                               const status = getStatusBadge(req.status);
-                               return (
+                           {filteredRequests.length > 0 ? filteredRequests.map(req => (
                                    <tr key={req.id} className="hover:bg-gray-50 transition-colors">
                                        <td className="px-6 py-4"><span className="font-semibold text-gray-900">#{req.id}</span></td>
                                        <td className="px-6 py-4">
@@ -222,31 +195,19 @@ const BorrowPage = () => {
                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDate(activeTab === 'borrowed' ? req.borrow_date : req.request_date)}</td>
                                        <td className="px-6 py-4 text-sm text-gray-600">{formatDate(req.due_date)}</td>
                                        <td className="px-6 py-4">
-                                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${status.color}`}>
-                                               <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor}`}></span>
-                                               {status.text}
-                                           </span>
-                                       </td>
-                                       <td className="px-6 py-4">
                                            <div className="flex items-center justify-center gap-1">
                                                <button onClick={() => handleViewDetail(req)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500" title="Chi tiết"><HiOutlineEye className="w-5 h-5" /></button>
-                                              
-                                               {req.status === 'pending' && !isAdmin && (
+                                               {activeTab === 'pending' && !isAdmin && (
                                                    <>
-                                                       <button onClick={() => handleApprove(req)} className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600" title="Duyệt"><HiOutlineCheck className="w-5 h-5" /></button>
-                                                       <button onClick={() => handleReject(req)} className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600" title="Từ chối"><HiOutlineX className="w-5 h-5" /></button>
+                                                       <button onClick={() => handleReject(req)} className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600" title="Huỷ"><HiOutlineX className="w-5 h-5" /></button>
+                                                       <button onClick={() => handleIssue(req)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600" title="Xuất sách"><HiOutlineBookOpen className="w-5 h-5" /></button>
                                                    </>
-                                               )}
-                                              
-                                               {req.status === 'approved' && !isAdmin && (
-                                                   <button onClick={() => handleIssue(req)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600" title="Xuất sách"><HiOutlineBookOpen className="w-5 h-5" /></button>
                                                )}
                                            </div>
                                        </td>
                                    </tr>
-                               );
-                           }) : (
-                               <tr><td colSpan="7" className="px-6 py-16 text-center text-gray-500">Không có dữ liệu</td></tr>
+                               )) : (
+                               <tr><td colSpan="6" className="px-6 py-16 text-center text-gray-500">Không có dữ liệu</td></tr>
                            )}
                        </tbody>
                    </table>

@@ -141,7 +141,11 @@ const returnBooksValidator = [
 const searchBorrowRequestValidator = [
     query('status')
         .optional()
-        .isIn(['pending', 'approved', 'rejected', 'borrowed', 'returned', 'overdue'])
+        .custom((value) => {
+            const allowed = ['pending', 'approved', 'rejected', 'borrowed', 'returned', 'overdue'];
+            const list = value.split(',').map(s => s.trim()).filter(Boolean);
+            return list.every(s => allowed.includes(s)) || allowed.includes(value);
+        })
         .withMessage('Trạng thái không hợp lệ'),
 
     query('library_card_id')

@@ -37,7 +37,10 @@ const getBorrowRequests = asyncHandler(async (req, res) => {
 
     const where = {};
 
-    if (status) where.status = status;
+    if (status) {
+        const statusList = status.split(',').map(s => s.trim()).filter(Boolean);
+        where.status = statusList.length > 1 ? { [Op.in]: statusList } : statusList[0];
+    }
     if (library_card_id) where.library_card_id = library_card_id;
 
     if (from_date || to_date) {
@@ -541,7 +544,7 @@ const approveBorrowRequest = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Xuất sách (chuyển từ approved sang borrowed)
+ * @desc    Xuất sách (chuyển từ pending/approved sang borrowed). Pending được coi như duyệt + xuất.
  * @route   PUT /api/borrow-requests/:id/issue
  * @access  Admin, Librarian
  */
@@ -554,19 +557,25 @@ const issueBooks = asyncHandler(async (req, res) => {
         throw new AppError('Không tìm thấy phiếu mượn', 404);
     }
 
-    if (borrowRequest.status !== 'approved') {
-        throw new AppError('Chỉ có thể xuất sách cho phiếu đã được duyệt', 400);
+    const allowedForIssue = ['pending', 'approved'];
+    if (!allowedForIssue.includes(borrowRequest.status)) {
+        throw new AppError('Chỉ có thể xuất sách cho phiếu chờ duyệt hoặc đã duyệt', 400);
     }
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Cập nhật phiếu mượn - chuyển sang borrowed và ghi nhận ngày mượn
-        await borrowRequest.update({
+        const staff = await Staff.findOne({ where: { account_id: req.user.id } });
+        const updatePayload = {
             status: 'borrowed',
             borrow_date: new Date(),
             notes: req.body.notes || borrowRequest.notes
-        }, { transaction });
+        };
+        // Nếu đang chờ duyệt thì ghi nhận người xuất sách (coi như đã duyệt)
+        if (borrowRequest.status === 'pending') {
+            updatePayload.approved_by = staff?.id;
+        }
+        await borrowRequest.update(updatePayload, { transaction });
 
         // Cập nhật trạng thái sách - chuyển sang borrowed
         const bookCopyIds = borrowRequest.details.map(d => d.book_copy_id);
@@ -589,7 +598,7 @@ const issueBooks = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Từ chối phiếu mượn
+ * @desc    Từ chối/Huỷ phiếu mượn (cho phép cả chờ duyệt và đã duyệt)
  * @route   PUT /api/borrow-requests/:id/reject
  * @access  Admin, Librarian
  */
@@ -600,8 +609,9 @@ const rejectBorrowRequest = asyncHandler(async (req, res) => {
         throw new AppError('Không tìm thấy phiếu mượn', 404);
     }
 
-    if (borrowRequest.status !== 'pending') {
-        throw new AppError('Phiếu mượn không ở trạng thái chờ duyệt', 400);
+    const allowedForReject = ['pending', 'approved'];
+    if (!allowedForReject.includes(borrowRequest.status)) {
+        throw new AppError('Chỉ có thể huỷ phiếu đang chờ duyệt hoặc đã duyệt', 400);
     }
 
     const staff = await Staff.findOne({ where: { account_id: req.user.id } });
