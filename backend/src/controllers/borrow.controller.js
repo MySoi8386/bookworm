@@ -776,12 +776,24 @@ const returnBooks = asyncHandler(async (req, res) => {
             // Lấy thông tin bản sách để tính phạt và cập nhật trạng thái
             const bookCopy = await BookCopy.findByPk(book_copy_id);
 
-            // Tính tiền phạt quá hạn (tính cả ngày hôm nay)
-            const dueDate = new Date(borrowRequest.due_date);
-            dueDate.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-            const diffTime = today - dueDate;
-            const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // Tính tiền phạt quá hạn (tính cả ngày hôm nay) - parse DATEONLY an toàn theo local
+            const parseDateOnly = (dateStr) => {
+                if (!dateStr || typeof dateStr !== 'string') return null;
+                const parts = dateStr.split('-').map(Number);
+                if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null;
+                const [y, m, d] = parts;
+                return new Date(y, m - 1, d);
+            };
+
+            const dueDate = parseDateOnly(borrowRequest.due_date);
+            let daysOverdue = 0;
+            if (dueDate) {
+                const todayLocal = new Date();
+                todayLocal.setHours(0, 0, 0, 0);
+                dueDate.setHours(0, 0, 0, 0);
+                const diffTime = todayLocal - dueDate;
+                daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
 
             if (daysOverdue > 0) {
                 const fineAmount = (bookCopy.price * currentFineRate / 100) * daysOverdue;

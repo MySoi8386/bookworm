@@ -344,6 +344,16 @@ const MyBooksPage = () => {
                                     )}
                                 </div>
 
+                                {/* Reject reason for rejected requests */}
+                                {request.status === 'rejected' && (request.reject_reason || request.notes) && (
+                                    <div className="mt-4 pt-4 border-t border-red-100">
+                                        <p className="text-xs font-medium text-red-700 mb-1">Lý do huỷ</p>
+                                        <p className="text-sm text-red-600">
+                                            {request.reject_reason || request.notes}
+                                        </p>
+                                    </div>
+                                )}
+
                                 {/* Fines info */}
                                 {request.fines && request.fines.length > 0 && (
                                     <div className="mt-4 pt-4 border-t border-gray-200">

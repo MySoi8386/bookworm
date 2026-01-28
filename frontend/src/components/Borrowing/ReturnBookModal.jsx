@@ -22,7 +22,8 @@ const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = 
                 const settingsData = response?.data?.data || response?.data || {};
                 const fineRate = settingsData.fine_rate_percent;
                 if (fineRate !== undefined && fineRate !== null) {
-                    setFineRatePercent(parseInt(fineRate) || 5);
+                    const parsed = parseFloat(fineRate);
+                    setFineRatePercent(Number.isFinite(parsed) ? parsed : 5);
                 }
             } catch (error) {
                 console.error('Load settings error:', error);
@@ -30,6 +31,14 @@ const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = 
         };
         if (isOpen) loadSettings();
     }, [isOpen]);
+
+    const parseDateOnlyLocal = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return null;
+        const parts = dateStr.split('-').map(Number);
+        if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null;
+        const [y, m, d] = parts;
+        return new Date(y, m - 1, d);
+    };
 
     // Tính toán initial items từ borrowRequest
     const initialItems = useMemo(() => {
@@ -65,8 +74,11 @@ const ReturnBookModal = ({ isOpen, onClose, onConfirm, borrowRequest, loading = 
     // Calculate overdue days
     const daysOverdue = useMemo(() => {
         if (!borrowRequest?.due_date) return 0;
-        const dueDate = new Date(borrowRequest.due_date);
+        const dueDate = parseDateOnlyLocal(borrowRequest.due_date);
+        if (!dueDate) return 0;
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
         const diffTime = today - dueDate;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays > 0 ? diffDays : 0;

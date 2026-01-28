@@ -260,7 +260,7 @@ const ReturnPage = () => {
            </div>
 
 
-           <BorrowDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} borrowRequest={selectedRequest} />
+           <BorrowDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} borrowRequest={selectedRequest} activeTab={activeTab} />
            <ReturnBookModal
                isOpen={returnModalOpen}
                onClose={() => setReturnModalOpen(false)}

@@ -4,8 +4,10 @@
  * ===================================================================
  */
 
+import { useEffect, useMemo, useState } from 'react';
 import Modal from '../Modal';
 import { HiOutlineUser, HiOutlineCalendar, HiOutlineBookOpen } from 'react-icons/hi';
+import { api } from '../../services';
 
 const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
     if (!borrowRequest) return null;
@@ -30,6 +32,43 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
     const isPendingTab = activeTab === 'pending';
     const isRejectedTab = activeTab === 'rejected';
     const showBookReturnStatus = !(isPendingTab || isRejectedTab);
+
+    // Fine settings (for overdue display)
+    const [fineRatePercent, setFineRatePercent] = useState(5);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const loadSettings = async () => {
+            try {
+                const response = await api.get('/system/settings');
+                const settingsData = response?.data?.data || response?.data || {};
+                const fineRate = settingsData.fine_rate_percent;
+                if (fineRate !== undefined && fineRate !== null) {
+                    const parsed = parseFloat(fineRate);
+                    if (Number.isFinite(parsed)) setFineRatePercent(parsed);
+                }
+            } catch (error) {
+                console.error('Load settings error (BorrowDetailModal):', error);
+            }
+        };
+        loadSettings();
+    }, [isOpen]);
+
+    const calculateDaysOverdue = (dueDate) => {
+        if (!dueDate) return 0;
+        const due = new Date(dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        due.setHours(0, 0, 0, 0);
+        const diffTime = today - due;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    };
+
+    const daysOverdue = useMemo(
+        () => calculateDaysOverdue(borrowRequest.due_date),
+        [borrowRequest.due_date]
+    );
     const displayStatus = isPendingTab ? { text: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800' } : getStatusBadge(borrowRequest.status);
     const reader = borrowRequest.libraryCard?.reader;
 
@@ -145,18 +184,65 @@ const BorrowDetailModal = ({ isOpen, onClose, borrowRequest, activeTab }) => {
                 {borrowRequest.fines?.length > 0 && (
                     <div className="bg-red-50 rounded-xl p-4">
                         <p className="text-sm font-medium text-red-900 mb-2">Tiền phạt</p>
-                        {borrowRequest.fines.map((fine, idx) => (
-                            <div key={idx} className="flex justify-between text-sm">
-                                <span className="text-red-700">{fine.reason}</span>
-                                <span className="font-semibold text-red-900">
-                                    {(() => {
-                                        const num = parseFloat(fine.amount) || 0;
-                                        const integerNum = num % 1 === 0 ? Math.floor(num) : num;
-                                        return integerNum.toLocaleString('vi-VN');
-                                    })()} VNĐ
-                                </span>
-                            </div>
-                        ))}
+                        {(() => {
+                            let overdueTotal = 0;
+                            const otherFines = [];
+
+                            borrowRequest.fines.forEach((fine) => {
+                                const rawReason = fine.reason || '';
+                                const isOverdueFine =
+                                    rawReason.includes('Quá hạn') || rawReason.includes('Trả quá hạn');
+
+                                // Tìm giá sách từ chi tiết mượn (BookCopy.price)
+                                const detailForFine = borrowRequest.details?.find(
+                                    d => d.book_copy_id === fine.book_copy_id
+                                );
+                                const copyPrice = detailForFine
+                                    ? parseFloat(detailForFine.bookCopy?.price) || 0
+                                    : 0;
+
+                                if (isOverdueFine && daysOverdue > 0 && copyPrice > 0) {
+                                    const computed = (copyPrice * fineRatePercent / 100) * daysOverdue;
+                                    overdueTotal += computed;
+                                } else {
+                                    otherFines.push(fine);
+                                }
+                            });
+
+                            const rows = [];
+
+                            if (overdueTotal > 0) {
+                                const amountNumber = overdueTotal % 1 === 0
+                                    ? Math.floor(overdueTotal)
+                                    : overdueTotal;
+                                rows.push(
+                                    <div key="overdue" className="flex justify-between text-sm">
+                                        <span className="text-red-700">
+                                            Quá hạn {daysOverdue} ngày (Phí {fineRatePercent}%/ngày)
+                                        </span>
+                                        <span className="font-semibold text-red-900">
+                                            {amountNumber.toLocaleString('vi-VN')} VNĐ
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            otherFines.forEach((fine, idx) => {
+                                const rawReason = fine.reason || 'Phạt';
+                                const num = parseFloat(fine.amount) || 0;
+                                const amountNumber = num % 1 === 0 ? Math.floor(num) : num;
+                                rows.push(
+                                    <div key={`fine-${idx}`} className="flex justify-between text-sm">
+                                        <span className="text-red-700">{rawReason}</span>
+                                        <span className="font-semibold text-red-900">
+                                            {amountNumber.toLocaleString('vi-VN')} VNĐ
+                                        </span>
+                                    </div>
+                                );
+                            });
+
+                            return rows;
+                        })()}
                     </div>
                 )}
             </div>
