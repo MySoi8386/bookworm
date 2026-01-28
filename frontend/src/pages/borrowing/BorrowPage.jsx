@@ -108,6 +108,12 @@ const BorrowPage = () => {
 
 
    const formatDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '-';
+   const formatMoney = (v) => {
+       const num = parseFloat(v);
+       if (Number.isNaN(num)) return '-';
+       const display = num % 1 === 0 ? Math.floor(num) : num;
+       return `${display.toLocaleString('vi-VN')}₫`;
+   };
 
    const filteredRequests = borrowRequests.filter(req => {
        if (!searchQuery) return true;
@@ -185,6 +191,8 @@ const BorrowPage = () => {
                                            </div>
                                            <div className="text-xs text-gray-500 mt-1">
                                                Mã: {req.details?.[0]?.bookCopy?.bookEdition?.book?.code || '-'}
+                                               <span className="mx-2">•</span>
+                                               Giá: {formatMoney(req.details?.[0]?.bookCopy?.price)}
                                            </div>
                                            {req.details?.length > 1 && <span className="text-xs text-gray-500 mt-1 block">+{req.details.length - 1} cuốn khác</span>}
                                        </td>
